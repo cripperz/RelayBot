@@ -1,5 +1,5 @@
 from twisted.words.protocols import irc
-from twisted.internet import reactor, protocol
+from twisted.internet import reactor, protocol, ssl
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python import log
 from twisted.internet.endpoints import clientFromString
@@ -52,7 +52,7 @@ def main():
             options["nickServPassword"] = get("nickServPassword")
 
         factory = factory(options)
-        reactor.connectTCP(options['host'], int(options['port']), factory, int(options['timeout']))
+        reactor.connectSSL(options['host'], int(options['port']), factory, ssl.ClientContextFactory(), int(options['timeout']))
 
     reactor.callWhenRunning(signal, SIGINT, handler)
 
@@ -199,6 +199,7 @@ class NickServRelayer(SilentJoinPart):
         self.startHeartbeat()
         self.join(self.channel, "")
         self.checkDesiredNick()
+        self.getAuthenticated(self.username, self.password)
 
     def checkDesiredNick(self):
         """
@@ -239,9 +240,14 @@ class NickServRelayer(SilentJoinPart):
                 log.msg("[%s] GHOST not needed, reclaiming nick %s."%(self.network,self.desiredNick))
                 self.setNick(self.desiredNick)
 
+    def getAuthenticated(self, user, password):
+        log.msg("Manually authenticating against flowdock")
+        self.msg(NickServRelayer.NickServ, "IDENTIFY %s %s"% (user, password))
+
     def __init__(self, config):
         IRCRelayer.__init__(self, config)
         self.password = config['nickServPassword']
+        self.username = config['username']
         self.desiredNick = config['nick']
         self.nickPoll = LoopingCall(self.regainNickPoll)
 

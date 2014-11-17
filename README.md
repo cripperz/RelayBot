@@ -6,6 +6,11 @@ This was written as I gutted `relaybot` while trying stop the second relay bot f
 
 This distribution includes `run.sh` for easier control of the daemon.
 
+MuMaLab: Slight changes to use this as a IRC bridge between IRC and Flowdock.
+
+ - mandatory ssl 
+ - NichServ auth 
+
 ## Modes
 
  - Default: simple two-way relaying.
