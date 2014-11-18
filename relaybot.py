@@ -42,6 +42,8 @@ def main():
         factory = None
         if mode == "Default":
             factory = RelayFactory
+        elif mode == "SilentJoinPart":
+            factory = SilentJoinPartFactory
         elif mode == "FLIP":
             factory = FLIPFactory
         elif mode == "NickServ":
@@ -181,6 +183,9 @@ class SilentJoinPart(IRCRelayer):
 
     def userRenamed(self, oldname, newname):
         pass
+
+class SilentJoinPartFactory(RelayFactory):
+    protocol = SilentJoinPart
 
 #Remove the _<numbers> that FLIP puts on the end of usernames.
 class FLIPRelayer(SilentJoinPart):
