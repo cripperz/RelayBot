@@ -171,18 +171,41 @@ class RelayFactory(ReconnectingClientFactory):
         x.factory = self
         return x
 
+# store nicknames of people who said something on IRC
+active_irc_users = set()
+
 class SilentJoinPart(IRCRelayer):
+    # extract the username from the message (anything between the first []) and then store it in set
+    def sayToChannel(self, message):
+        regex = re.compile("\[([^\]]+)")
+        match = regex.match(message)
+        if match:
+            username = match.group(1)
+            active_irc_users.add(username)
+        self.say(self.channel, message)
+
     def userJoined(self, user, channel):
         pass
 
+    # show that a user has left only if they have said something since they last joined
     def userLeft(self, user, channel):
-        pass
+        user = IRCRelayer.formatUsername(self, user)
+        if user in active_irc_users:
+            active_irc_users.discard(user)
+            self.relay("%s left."%user)
 
     def userQuit(self, user, quitMessage):
-        pass
+        user = IRCRelayer.formatUsername(self, user)
+        if user in active_irc_users:
+            active_irc_users.discard(user)
+            self.relay("%s quit. (%s)"%(user, quitMessage))
 
+    # make sure to update the set when a user changes their name
     def userRenamed(self, oldname, newname):
-        pass
+        if oldname in active_irc_users:
+            active_irc_users.discard(oldname)
+            active_irc_users.add(newname)
+            self.relay("%s is now known as %s."%(IRCRelayer.formatUsername(self, oldname), IRCRelayer.formatUsername(self, newname)))
 
 class SilentJoinPartFactory(RelayFactory):
     protocol = SilentJoinPart
