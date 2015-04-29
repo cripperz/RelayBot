@@ -192,20 +192,20 @@ class SilentJoinPart(IRCRelayer):
         user = IRCRelayer.formatUsername(self, user)
         if user in active_irc_users:
             active_irc_users.discard(user)
-            self.relay("%s left."%user)
+            self.relay("-- %s left."%user)
 
     def userQuit(self, user, quitMessage):
         user = IRCRelayer.formatUsername(self, user)
         if user in active_irc_users:
             active_irc_users.discard(user)
-            self.relay("%s quit. (%s)"%(user, quitMessage))
+            self.relay("-- %s quit. (%s)"%(user, quitMessage))
 
     # make sure to update the set when a user changes their name
     def userRenamed(self, oldname, newname):
         if oldname in active_irc_users:
             active_irc_users.discard(oldname)
             active_irc_users.add(newname)
-            self.relay("%s is now known as %s."%(IRCRelayer.formatUsername(self, oldname), IRCRelayer.formatUsername(self, newname)))
+            self.relay("-- %s is now known as %s."%(IRCRelayer.formatUsername(self, oldname), IRCRelayer.formatUsername(self, newname)))
 
 class SilentJoinPartFactory(RelayFactory):
     protocol = SilentJoinPart
