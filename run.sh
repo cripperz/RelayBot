@@ -13,6 +13,12 @@ stop() {
     kill `cat relaybot.pid`
 }
 
+MY_PATH=`dirname "$0"`
+cd $MY_PATH
+if [ -d "env" ]; then
+    source env/bin/activate
+fi
+
 case "$1" in
     'start')
         start

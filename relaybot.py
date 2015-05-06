@@ -186,7 +186,7 @@ class SilentJoinPart(IRCRelayer):
     def userLeft(self, user, channel):
         user = IRCRelayer.formatUsername(self, user)
         if activeIrcUsers.isUserStillActive(user):
-            self.relay("%s left."%user)
+            self.relay("-- %s left."%user)
         activeIrcUsers.remove(user)
 
     def userQuit(self, user, quitMessage):
@@ -197,7 +197,7 @@ class SilentJoinPart(IRCRelayer):
 
     def userRenamed(self, oldname, newname):
         if activeIrcUsers.isUserStillActive(oldname):
-            self.relay("%s is now known as %s."%(IRCRelayer.formatUsername(self, oldname), IRCRelayer.formatUsername(self, newname)))
+            self.relay("-- %s is now known as %s."%(IRCRelayer.formatUsername(self, oldname), IRCRelayer.formatUsername(self, newname)))
         activeIrcUsers.remove(oldname)
         activeIrcUsers.add(newname)
 
