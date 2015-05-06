@@ -84,7 +84,6 @@ class Communicator:
 
 #Global scope: all protocol instances will need this.
 communicator = Communicator()
-activeIrcUsers = ActiveIrcUsers()
 
 class IRCRelayer(irc.IRCClient):
 
@@ -174,32 +173,34 @@ class RelayFactory(ReconnectingClientFactory):
         return x
 
 class SilentJoinPart(IRCRelayer):
+    activeIrcUsers = ActiveIrcUsers()
+
     def sayToChannel(self, message):
         self.say(self.channel, message)
-        user = activeIrcUsers.getUsernameFromMessage(message)
+        user = self.activeIrcUsers.getUsernameFromMessage(message)
         if user:
-            activeIrcUsers.add(user)
+            self.activeIrcUsers.add(user)
 
     def userJoined(self, user, channel):
         pass
 
     def userLeft(self, user, channel):
         user = IRCRelayer.formatUsername(self, user)
-        if activeIrcUsers.isUserStillActive(user):
+        if self.activeIrcUsers.isUserStillActive(user):
             self.relay("-- %s left."%user)
-        activeIrcUsers.remove(user)
+        self.activeIrcUsers.remove(user)
 
     def userQuit(self, user, quitMessage):
         user = IRCRelayer.formatUsername(self, user)
-        if activeIrcUsers.isUserStillActive(user):
-            self.relay("%s quit. (%s)"%(user, quitMessage))
-        activeIrcUsers.remove(user)
+        if self.activeIrcUsers.isUserStillActive(user):
+            self.relay("-- %s quit. (%s)"%(user, quitMessage))
+        self.activeIrcUsers.remove(user)
 
     def userRenamed(self, oldname, newname):
-        if activeIrcUsers.isUserStillActive(oldname):
+        if self.activeIrcUsers.isUserStillActive(oldname):
             self.relay("-- %s is now known as %s."%(IRCRelayer.formatUsername(self, oldname), IRCRelayer.formatUsername(self, newname)))
-        activeIrcUsers.remove(oldname)
-        activeIrcUsers.add(newname)
+        self.activeIrcUsers.remove(oldname)
+        self.activeIrcUsers.add(newname)
 
 class SilentJoinPartFactory(RelayFactory):
     protocol = SilentJoinPart
