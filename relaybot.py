@@ -7,6 +7,7 @@ from twisted.internet.task import LoopingCall
 from twisted.application import service
 from signal import signal, SIGINT
 from ConfigParser import SafeConfigParser
+from ActiveIrcUsers import ActiveIrcUsers
 import re, sys
 
 #
@@ -83,6 +84,7 @@ class Communicator:
 
 #Global scope: all protocol instances will need this.
 communicator = Communicator()
+activeIrcUsers = ActiveIrcUsers()
 
 class IRCRelayer(irc.IRCClient):
 
@@ -171,41 +173,33 @@ class RelayFactory(ReconnectingClientFactory):
         x.factory = self
         return x
 
-# store nicknames of people who said something on IRC
-active_irc_users = set()
-
 class SilentJoinPart(IRCRelayer):
-    # extract the username from the message (anything between the first []) and then store it in set
     def sayToChannel(self, message):
-        regex = re.compile("\[([^\]]+)")
-        match = regex.match(message)
-        if match:
-            username = match.group(1)
-            active_irc_users.add(username)
         self.say(self.channel, message)
+        user = activeIrcUsers.getUsernameFromMessage(message)
+        if user:
+            activeIrcUsers.add(user)
 
     def userJoined(self, user, channel):
         pass
 
-    # show that a user has left only if they have said something since they last joined
     def userLeft(self, user, channel):
         user = IRCRelayer.formatUsername(self, user)
-        if user in active_irc_users:
-            active_irc_users.discard(user)
+        if activeIrcUsers.isUserStillActive(user):
             self.relay("%s left."%user)
+        activeIrcUsers.remove(user)
 
     def userQuit(self, user, quitMessage):
         user = IRCRelayer.formatUsername(self, user)
-        if user in active_irc_users:
-            active_irc_users.discard(user)
+        if activeIrcUsers.isUserStillActive(user):
             self.relay("%s quit. (%s)"%(user, quitMessage))
+        activeIrcUsers.remove(user)
 
-    # make sure to update the set when a user changes their name
     def userRenamed(self, oldname, newname):
-        if oldname in active_irc_users:
-            active_irc_users.discard(oldname)
-            active_irc_users.add(newname)
+        if activeIrcUsers.isUserStillActive(oldname):
             self.relay("%s is now known as %s."%(IRCRelayer.formatUsername(self, oldname), IRCRelayer.formatUsername(self, newname)))
+        activeIrcUsers.remove(oldname)
+        activeIrcUsers.add(newname)
 
 class SilentJoinPartFactory(RelayFactory):
     protocol = SilentJoinPart
